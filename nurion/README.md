@@ -5,6 +5,9 @@ This folder contains Nurion-specific helpers for two stages:
 1. Interactive smoke test on a compute node with about 50 sampled PDBbind complexes
 2. Full PDBbind 2021 batch submission with PBS
 
+It also includes an optional Singularity-based execution path for users who
+prefer containerized runs on Nurion.
+
 The examples below assume the following Nurion layout:
 
 - repo: `/scratch/r992a02/Docking/vina-docking-pipeline`
@@ -19,6 +22,10 @@ Adjust paths if your layout changes.
 - `env/config.nurion.full.env.example`
 - `scripts/run_smoke50_interactive.sh`
 - `pbs/run_full_pdbbind2021.pbs`
+- `singularity/Singularity.def`
+- `singularity/run_smoke50_in_container.sh`
+- `singularity/run_full_in_container.sh`
+- `pbs/run_full_pdbbind2021_singularity.pbs`
 
 ## Recommended Order
 
@@ -144,4 +151,39 @@ For ADFRsuite:
 ```bash
 /scratch/r992a02/micromamba/envs/adcpsuite/bin/python -c "print('adcpsuite ok')"
 ls /scratch/r992a02/micromamba/envs/adcpsuite/bin/prepare_receptor4.py
+```
+
+## 6. Optional Singularity Path
+
+Nurion supports Singularity execution. The examples here follow the Nurion
+guide pattern:
+
+- load module: `module load singularity/3.11.0`
+- interactive test: `singularity exec ...`
+- PBS batch: `module load singularity/3.11.0` inside the job script
+
+Important note:
+
+- the provided `Singularity.def` is a portable starting point
+- building a `.sif` on Nurion may require `fakeroot` approval or a remote build
+- if local build is inconvenient, build the image elsewhere and copy the `.sif`
+  to `/scratch`
+
+Suggested image path:
+
+- `/scratch/r992a02/containers/vinadock.sif`
+
+Interactive container smoke test:
+
+```bash
+qsub -I -V -q normal -A na1527 -l select=1:ncpus=8:mpiprocs=1:ompthreads=8 -l walltime=02:00:00
+cd /scratch/r992a02/Docking/vina-docking-pipeline
+bash nurion/singularity/run_smoke50_in_container.sh /scratch/r992a02/containers/vinadock.sif
+```
+
+PBS container full run:
+
+```bash
+cd /scratch/r992a02/Docking/vina-docking-pipeline
+qsub nurion/pbs/run_full_pdbbind2021_singularity.pbs
 ```

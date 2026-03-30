@@ -1,0 +1,34 @@
+Bootstrap: docker
+From: continuumio/miniconda3:24.1.2-0
+
+%labels
+    Author ymnoh
+    Description Vina docking pipeline container for Nurion
+
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export PATH=/opt/conda/envs/vina_dock/bin:/opt/conda/envs/adcpsuite/bin:/opt/conda/bin:$PATH
+
+%post
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        bash \
+        ca-certificates \
+        git \
+        wget \
+        bzip2 \
+        build-essential
+    rm -rf /var/lib/apt/lists/*
+
+    /opt/conda/bin/conda create -n vina_dock -y python=3.10
+    /opt/conda/bin/conda install -n vina_dock -y -c conda-forge \
+        numpy rdkit spyrmsd vina meeko
+
+    /opt/conda/bin/conda create -n adcpsuite -y python=3.7 numpy pip
+    /opt/conda/bin/conda run -n adcpsuite pip install adfr
+
+    /opt/conda/bin/conda clean -afy
+
+%runscript
+    exec "$@"
