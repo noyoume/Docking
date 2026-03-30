@@ -5,8 +5,13 @@ This folder contains Nurion-specific helpers for two stages:
 1. Interactive smoke test on a compute node with about 50 sampled PDBbind complexes
 2. Full PDBbind 2021 batch submission with PBS
 
-It also includes an optional Singularity-based execution path for users who
-prefer containerized runs on Nurion.
+The recommended Nurion path is:
+
+- run a prebuilt Singularity image for the smoke test
+- if the smoke test succeeds, submit the full PBS batch job with the same image
+
+The micromamba-based files are kept as a fallback, but the primary Nurion
+workflow in this repo is now the Singularity execution path.
 
 The examples below assume the following Nurion layout:
 
@@ -18,25 +23,37 @@ Adjust paths if your layout changes.
 
 ## Files
 
+- `pbs/run_full_pdbbind2021_singularity.pbs`
+- `singularity/run_smoke50_in_container.sh`
+- `singularity/run_full_in_container.sh`
+- `singularity/README.md`
+- `singularity/Singularity.def`
 - `env/config.nurion.smoke50.env.example`
 - `env/config.nurion.full.env.example`
 - `scripts/run_smoke50_interactive.sh`
 - `pbs/run_full_pdbbind2021.pbs`
-- `singularity/Singularity.def`
-- `singularity/run_smoke50_in_container.sh`
-- `singularity/run_full_in_container.sh`
-- `pbs/run_full_pdbbind2021_singularity.pbs`
 
 ## Recommended Order
 
 1. Clone the repo to `/scratch`
-2. Make sure `vina_dock` and `adcpsuite` environments are available
+2. Prepare or copy a prebuilt `vinadock.sif` image to `/scratch`
 3. Start an interactive compute session
-4. Run the 50-complex smoke test end-to-end
+4. Run the 50-complex smoke test in the container
 5. Inspect `summary.csv` and `failures.csv`
-6. If the smoke test looks good, submit the full PBS job
+6. If the smoke test looks good, submit the full PBS job with the same image
 
-## 1. Interactive Smoke Test
+## 1. Recommended Singularity Workflow
+
+### 1-1. Prebuilt Image
+
+The intended Nurion workflow is to use a prebuilt image such as:
+
+- `/scratch/r992a02/containers/vinadock.sif`
+
+This avoids building on Nurion and avoids any `fakeroot` requirement during
+routine use.
+
+### 1-2. Interactive Smoke Test
 
 Request an interactive node from the login node:
 
@@ -48,12 +65,12 @@ Once you land on a compute node:
 
 ```bash
 cd /scratch/r992a02/Docking/vina-docking-pipeline
-bash nurion/scripts/run_smoke50_interactive.sh
+bash nurion/singularity/run_smoke50_in_container.sh /scratch/r992a02/containers/vinadock.sif
 ```
 
 That script will:
 
-- activate `micromamba` and `vina_dock`
+- load `singularity/3.11.0`
 - sample 50 complexes from the PDBbind 2021 tar files
 - write a smoke-test config file
 - run docking and RMSD scoring end-to-end
@@ -86,15 +103,15 @@ Submit from the login node:
 
 ```bash
 cd /scratch/r992a02/Docking/vina-docking-pipeline
-qsub nurion/pbs/run_full_pdbbind2021.pbs
+qsub nurion/pbs/run_full_pdbbind2021_singularity.pbs
 ```
 
 This PBS job will:
 
-- activate `micromamba`
+- load `singularity/3.11.0`
 - extract all PDBbind 2021 PL complexes into standard `complexes/` format
 - write a production config file
-- run the full docking pipeline with resume enabled
+- run the full docking pipeline inside the container with resume enabled
 
 Expected full-run root:
 
@@ -128,9 +145,15 @@ Shared parameters:
 - `VINADOCK_MAX_GRID_SIZE=126.0`
 - `VINADOCK_SKIP_EXISTING=true`
 
-## 5. Environment Notes
+## 5. Optional Micromamba Fallback
 
-These examples assume:
+If you do not want to use Singularity for some reason, this repo still includes
+the older micromamba-based path:
+
+- `scripts/run_smoke50_interactive.sh`
+- `pbs/run_full_pdbbind2021.pbs`
+
+Those files assume:
 
 - `vina_dock` contains `vina`, `meeko`, `rdkit`, `spyrmsd`
 - `adcpsuite` contains `prepare_receptor4.py`
@@ -153,7 +176,7 @@ For ADFRsuite:
 ls /scratch/r992a02/micromamba/envs/adcpsuite/bin/prepare_receptor4.py
 ```
 
-## 6. Optional Singularity Path
+## 6. Notes On Building Images
 
 Nurion supports Singularity execution. The examples here follow the Nurion
 guide pattern:
@@ -165,7 +188,9 @@ guide pattern:
 Important note:
 
 - the provided `Singularity.def` is a portable starting point
-- building a `.sif` on Nurion may require `fakeroot` approval or a remote build
+- you do not need `fakeroot` to run an already-built `.sif`
+- `fakeroot` only becomes relevant if you try to build a custom image from
+  `Singularity.def` on Nurion
 - if local build is inconvenient, build the image elsewhere and copy the `.sif`
   to `/scratch`
 
