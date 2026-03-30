@@ -2,6 +2,8 @@
 
 A generic AutoDock Vina re-docking framework. Clone this repo and run on any server with conda/mamba.
 
+Cluster-specific examples for KISTI Nurion are provided in [`nurion/`](./nurion).
+
 ## Pipeline
 
 1. **Water stripping** -- remove HOH/WAT from protein PDB
