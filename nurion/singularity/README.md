@@ -32,7 +32,7 @@ another Linux machine and copy the resulting `.sif` to `/scratch`.
 ```bash
 module load singularity/3.11.0
 mkdir -p /scratch/r992a02/containers
-cd /scratch/r992a02/Docking/vina-docking-pipeline/nurion/singularity
+cd /scratch/r992a02/Docking/nurion/singularity
 singularity build --fakeroot /scratch/r992a02/containers/vinadock.sif Singularity.def
 ```
 

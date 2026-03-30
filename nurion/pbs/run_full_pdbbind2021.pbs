@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -N vinadock_pdbbind2021
-#PBS -q normal
-#PBS -A na1527
+#PBS -q norm_skl
+#PBS -A inhouse
 #PBS -l select=1:ncpus=32:mpiprocs=1:ompthreads=32
 #PBS -l walltime=72:00:00
 #PBS -V
@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-REPO_DIR="${REPO_DIR:-/scratch/r992a02/Docking/vina-docking-pipeline}"
+REPO_DIR="${REPO_DIR:-/scratch/r992a02/Docking}"
 DATA_DIR="${DATA_DIR:-/scratch/r992a02/PDBBind2021}"
 WORK_ROOT="${WORK_ROOT:-/scratch/r992a02/docking_full_pdbbind2021}"
 MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-/scratch/r992a02/micromamba}"

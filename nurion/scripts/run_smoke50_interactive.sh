@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-REPO_DIR="${REPO_DIR:-/scratch/r992a02/Docking/vina-docking-pipeline}"
+REPO_DIR="${REPO_DIR:-/scratch/r992a02/Docking}"
 DATA_DIR="${DATA_DIR:-/scratch/r992a02/PDBBind2021}"
 WORK_ROOT="${WORK_ROOT:-/scratch/r992a02/docking_smoke50}"
 MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-/scratch/r992a02/micromamba}"

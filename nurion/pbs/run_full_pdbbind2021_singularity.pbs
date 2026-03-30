@@ -1,15 +1,15 @@
 #!/bin/bash
 #PBS -N vinadock_pdbbind_sif
-#PBS -q normal
-#PBS -A na1527
+#PBS -q norm_skl
+#PBS -A inhouse
 #PBS -V
 #PBS -j oe
-#PBS -l select=1:ncpus=32:mpiprocs=1:ompthreads=32
+#PBS -l select=1:ncpus=36:mpiprocs=1:ompthreads=36
 #PBS -l walltime=72:00:00
 
 set -euo pipefail
 
-REPO_DIR="${REPO_DIR:-/scratch/r992a02/Docking/vina-docking-pipeline}"
+REPO_DIR="${REPO_DIR:-/scratch/r992a02/Docking}"
 IMAGE_PATH="${IMAGE_PATH:-/scratch/r992a02/containers/vinadock.sif}"
 
 cd "${PBS_O_WORKDIR:-$REPO_DIR}"

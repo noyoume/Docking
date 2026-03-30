@@ -2,7 +2,7 @@
 set -euo pipefail
 
 IMAGE_PATH="${1:-/scratch/r992a02/containers/vinadock.sif}"
-REPO_DIR="${REPO_DIR:-/scratch/r992a02/Docking/vina-docking-pipeline}"
+REPO_DIR="${REPO_DIR:-/scratch/r992a02/Docking}"
 DATA_DIR="${DATA_DIR:-/scratch/r992a02/PDBBind2021}"
 WORK_ROOT="${WORK_ROOT:-/scratch/r992a02/docking_smoke50_container}"
 SEED="${SEED:-42}"

@@ -15,7 +15,7 @@ workflow in this repo is now the Singularity execution path.
 
 The examples below assume the following Nurion layout:
 
-- repo: `/scratch/r992a02/Docking/vina-docking-pipeline`
+- repo: `/scratch/r992a02/Docking`
 - PDBbind data: `/scratch/r992a02/PDBBind2021`
 - micromamba root: `/scratch/r992a02/micromamba`
 
@@ -40,7 +40,7 @@ Adjust paths if your layout changes.
 3. Start an interactive compute session
 4. Run the 50-complex smoke test in the container
 5. Inspect `summary.csv` and `failures.csv`
-6. If the smoke test looks good, submit the full PBS job with the same image
+6. If the smoke test looks good, prepare shards and submit the sharded PBS jobs
 
 ## 1. Recommended Singularity Workflow
 
@@ -58,13 +58,13 @@ routine use.
 Request an interactive node from the login node:
 
 ```bash
-qsub -I -V -q normal -A na1527 -l select=1:ncpus=8:mpiprocs=1:ompthreads=8 -l walltime=02:00:00
+qsub -I -V -q norm_skl -A inhouse -l select=1:ncpus=8:mpiprocs=1:ompthreads=8 -l walltime=02:00:00
 ```
 
 Once you land on a compute node:
 
 ```bash
-cd /scratch/r992a02/Docking/vina-docking-pipeline
+cd /scratch/r992a02/Docking
 bash nurion/singularity/run_smoke50_in_container.sh /scratch/r992a02/containers/vinadock.sif
 ```
 
@@ -99,19 +99,22 @@ The smoke test is considered good enough to move on if:
 
 ## 3. Full PDBbind Batch Submission
 
-Submit from the login node:
+For the fastest practical production path, use the sharded PBS workflow.
+
+From the login node:
 
 ```bash
-cd /scratch/r992a02/Docking/vina-docking-pipeline
-qsub nurion/pbs/run_full_pdbbind2021_singularity.pbs
+cd /scratch/r992a02/Docking
+NUM_SHARDS=96 bash nurion/scripts/prepare_pdbbind_shards.sh
+qsub nurion/pbs/run_full_pdbbind2021_sharded_singularity.pbs
 ```
 
-This PBS job will:
+This workflow will:
 
-- load `singularity/3.11.0`
 - extract all PDBbind 2021 PL complexes into standard `complexes/` format
-- write a production config file
-- run the full docking pipeline inside the container with resume enabled
+- split the complexes into 96 shard directories
+- submit a 96-task PBS array
+- run one shard per SKL node inside the container
 
 Expected full-run root:
 
@@ -131,12 +134,14 @@ Smoke test parameters:
 - `VINADOCK_NUM_RUNS=2`
 - `VINADOCK_VINA_TIMEOUT=300`
 
-Full production parameters:
+Fast-production shard parameters:
 
-- `VINADOCK_EXHAUSTIVENESS=8`
+- `NUM_SHARDS=48`
+- `NUM_SHARDS=96`
+- `VINADOCK_EXHAUSTIVENESS=4`
 - `VINADOCK_NUM_MODES=10`
-- `VINADOCK_NUM_RUNS=10`
-- `VINADOCK_VINA_TIMEOUT=600`
+- `VINADOCK_NUM_RUNS=5`
+- `VINADOCK_VINA_TIMEOUT=300`
 
 Shared parameters:
 
@@ -201,14 +206,15 @@ Suggested image path:
 Interactive container smoke test:
 
 ```bash
-qsub -I -V -q normal -A na1527 -l select=1:ncpus=8:mpiprocs=1:ompthreads=8 -l walltime=02:00:00
-cd /scratch/r992a02/Docking/vina-docking-pipeline
+qsub -I -V -q norm_skl -A inhouse -l select=1:ncpus=8:mpiprocs=1:ompthreads=8 -l walltime=02:00:00
+cd /scratch/r992a02/Docking
 bash nurion/singularity/run_smoke50_in_container.sh /scratch/r992a02/containers/vinadock.sif
 ```
 
 PBS container full run:
 
 ```bash
-cd /scratch/r992a02/Docking/vina-docking-pipeline
-qsub nurion/pbs/run_full_pdbbind2021_singularity.pbs
+cd /scratch/r992a02/Docking
+NUM_SHARDS=96 bash nurion/scripts/prepare_pdbbind_shards.sh
+qsub nurion/pbs/run_full_pdbbind2021_sharded_singularity.pbs
 ```
