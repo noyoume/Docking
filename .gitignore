@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+
+# Runtime outputs
+output/
+complexes/
+
+# Intermediate files
+*.pdbqt
+
+# Config with real paths
+config.env
+.env
+
+# OS
+.DS_Store
