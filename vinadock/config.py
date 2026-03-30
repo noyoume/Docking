@@ -17,6 +17,7 @@ class Config:
     exhaustiveness: int = 8
     num_modes: int = 10
     num_runs: int = 10
+    vina_cpu: int = 0
     energy_range: float = 5.0
     vina_timeout: int = 600
     grid_padding: float = 3.0
@@ -50,6 +51,7 @@ class Config:
             exhaustiveness=_int("VINADOCK_EXHAUSTIVENESS", 8),
             num_modes=_int("VINADOCK_NUM_MODES", 10),
             num_runs=_int("VINADOCK_NUM_RUNS", 10),
+            vina_cpu=_int("VINADOCK_VINA_CPU", 0),
             energy_range=_float("VINADOCK_ENERGY_RANGE", 5.0),
             vina_timeout=_int("VINADOCK_VINA_TIMEOUT", 600),
             grid_padding=_float("VINADOCK_GRID_PADDING", 3.0),

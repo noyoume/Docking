@@ -50,6 +50,7 @@ def run_vina(
             "--size_z", f"{box['size_z']:.3f}",
             "--exhaustiveness", str(config.exhaustiveness),
             "--num_modes", str(config.num_modes),
+            "--cpu", str(config.vina_cpu),
             "--energy_range", str(config.energy_range),
             "--seed", str(seed),
             "--out", str(out_pdbqt),

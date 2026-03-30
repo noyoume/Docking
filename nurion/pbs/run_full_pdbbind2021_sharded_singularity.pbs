@@ -6,13 +6,15 @@
 #PBS -j oe
 #PBS -l select=1:ncpus=36:mpiprocs=1:ompthreads=36
 #PBS -l walltime=12:00:00
-#PBS -J 1-96
+#PBS -J 1-48%12
 
 set -euo pipefail
 
 REPO_DIR="${REPO_DIR:-/scratch/r992a02/Docking}"
 WORK_ROOT="${WORK_ROOT:-/scratch/r992a02/docking_full_pdbbind2021_container}"
 IMAGE_PATH="${IMAGE_PATH:-/scratch/r992a02/containers/vinadock.sif}"
+WORKERS_PER_NODE="${WORKERS_PER_NODE:-6}"
+VINA_CPU_PER_WORKER="${VINA_CPU_PER_WORKER:-6}"
 
 SHARD_DIR="${WORK_ROOT}/shards/shard_$(printf "%04d" "${PBS_ARRAY_INDEX}")"
 if [ ! -d "${SHARD_DIR}" ]; then
@@ -20,12 +22,49 @@ if [ ! -d "${SHARD_DIR}" ]; then
     exit 1
 fi
 
+SHARD_NAME="$(basename "${SHARD_DIR}")"
+SHARD_WORK_ROOT="${WORK_ROOT}/worker_shards/${SHARD_NAME}"
+SHARD_OUTPUT_ROOT="${WORK_ROOT}/output/${SHARD_NAME}"
+
+rm -rf "${SHARD_WORK_ROOT}"
+mkdir -p "${SHARD_WORK_ROOT}" "${SHARD_OUTPUT_ROOT}"
+for worker_idx in $(seq 1 "${WORKERS_PER_NODE}"); do
+    mkdir -p "${SHARD_WORK_ROOT}/worker_$(printf "%02d" "${worker_idx}")"
+done
+
+worker_idx=1
+for complex_dir in "${SHARD_DIR}"/*; do
+    if [ ! -d "${complex_dir}" ]; then
+        continue
+    fi
+    complex_id="$(basename "${complex_dir}")"
+    ln -sfn "${complex_dir}" "${SHARD_WORK_ROOT}/worker_$(printf "%02d" "${worker_idx}")/${complex_id}"
+    worker_idx=$((worker_idx + 1))
+    if [ "${worker_idx}" -gt "${WORKERS_PER_NODE}" ]; then
+        worker_idx=1
+    fi
+done
+
 module load singularity/3.11.0
 export SINGULARITYENV_LD_LIBRARY_PATH="/opt/ADFRsuite/lib:${SINGULARITYENV_LD_LIBRARY_PATH:-}"
 
-cat > "${WORK_ROOT}/config.shard_${PBS_ARRAY_INDEX}.env" <<EOF
-VINADOCK_COMPLEXES_DIR=${SHARD_DIR}
-VINADOCK_OUTPUT_DIR=${WORK_ROOT}/output
+cd "${PBS_O_WORKDIR:-$REPO_DIR}"
+
+pids=()
+for worker_idx in $(seq 1 "${WORKERS_PER_NODE}"); do
+    worker_name="worker_$(printf "%02d" "${worker_idx}")"
+    worker_complex_dir="${SHARD_WORK_ROOT}/${worker_name}"
+    if ! find "${worker_complex_dir}" -mindepth 1 -maxdepth 1 -type l | grep -q .; then
+        continue
+    fi
+
+    worker_output_dir="${SHARD_OUTPUT_ROOT}/${worker_name}"
+    worker_config="${WORK_ROOT}/config.${SHARD_NAME}.${worker_name}.env"
+    mkdir -p "${worker_output_dir}"
+
+    cat > "${worker_config}" <<EOF
+VINADOCK_COMPLEXES_DIR=${worker_complex_dir}
+VINADOCK_OUTPUT_DIR=${worker_output_dir}
 
 VINADOCK_ADFR_PYTHON=/opt/ADFRsuite/bin/python
 VINADOCK_ADFR_PREP_RECEPTOR=/opt/ADFRsuite/CCSBpckgs/AutoDockTools/Utilities24/prepare_receptor4.py
@@ -33,6 +72,7 @@ VINADOCK_ADFR_PREP_RECEPTOR=/opt/ADFRsuite/CCSBpckgs/AutoDockTools/Utilities24/p
 VINADOCK_EXHAUSTIVENESS=4
 VINADOCK_NUM_MODES=10
 VINADOCK_NUM_RUNS=5
+VINADOCK_VINA_CPU=${VINA_CPU_PER_WORKER}
 VINADOCK_ENERGY_RANGE=5.0
 VINADOCK_VINA_TIMEOUT=300
 
@@ -43,12 +83,17 @@ VINADOCK_SKIP_EXISTING=true
 VINADOCK_FAIL_LOG=failures.csv
 EOF
 
-cd "${PBS_O_WORKDIR:-$REPO_DIR}"
-singularity exec \
-    --bind "${REPO_DIR}:${REPO_DIR}" \
-    --bind "${WORK_ROOT}:${WORK_ROOT}" \
-    --bind /scratch:/scratch \
-    "${IMAGE_PATH}" \
-    /opt/conda/envs/vina_dock/bin/python "${REPO_DIR}/run.py" --config "${WORK_ROOT}/config.shard_${PBS_ARRAY_INDEX}.env"
+    singularity exec \
+        --bind "${REPO_DIR}:${REPO_DIR}" \
+        --bind "${WORK_ROOT}:${WORK_ROOT}" \
+        --bind /scratch:/scratch \
+        "${IMAGE_PATH}" \
+        /opt/conda/envs/vina_dock/bin/python "${REPO_DIR}/run.py" --config "${worker_config}" &
+    pids+=($!)
+done
+
+for pid in "${pids[@]}"; do
+    wait "${pid}"
+done
 
 echo "Finished shard ${PBS_ARRAY_INDEX}"

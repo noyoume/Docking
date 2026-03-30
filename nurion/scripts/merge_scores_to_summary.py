@@ -19,13 +19,10 @@ def main():
     args = parser.parse_args()
 
     all_results = {}
-    for complex_dir in sorted(args.output_dir.iterdir()):
-        if not complex_dir.is_dir():
-            continue
-        scores_csv = complex_dir / "scores.csv"
+    for scores_csv in sorted(args.output_dir.rglob("scores.csv")):
         scores = load_scores_csv(scores_csv)
         if scores:
-            all_results[complex_dir.name] = scores
+            all_results[scores_csv.parent.name] = scores
 
     summary_path = args.output_dir / "summary.csv"
     rows = write_summary(all_results, summary_path)
