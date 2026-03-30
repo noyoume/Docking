@@ -8,6 +8,7 @@ complexes/
 
 # Intermediate files
 *.pdbqt
+*.sif
 
 # Config with real paths
 config.env

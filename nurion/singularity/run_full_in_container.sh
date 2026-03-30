@@ -7,6 +7,7 @@ DATA_DIR="${DATA_DIR:-/scratch/r992a02/PDBBind2021}"
 WORK_ROOT="${WORK_ROOT:-/scratch/r992a02/docking_full_pdbbind2021_container}"
 
 module load singularity/3.11.0
+export SINGULARITYENV_LD_LIBRARY_PATH="/opt/ADFRsuite/lib:${SINGULARITYENV_LD_LIBRARY_PATH:-}"
 
 mkdir -p "${WORK_ROOT}"
 mkdir -p "${WORK_ROOT}/complexes"
@@ -19,8 +20,8 @@ cat > "${WORK_ROOT}/config.env" <<EOF
 VINADOCK_COMPLEXES_DIR=${WORK_ROOT}/complexes
 VINADOCK_OUTPUT_DIR=${WORK_ROOT}/output
 
-VINADOCK_ADFR_PYTHON=/opt/conda/envs/adcpsuite/bin/python
-VINADOCK_ADFR_PREP_RECEPTOR=/opt/conda/envs/adcpsuite/bin/prepare_receptor4.py
+VINADOCK_ADFR_PYTHON=/opt/ADFRsuite/bin/python
+VINADOCK_ADFR_PREP_RECEPTOR=/opt/ADFRsuite/CCSBpckgs/AutoDockTools/Utilities24/prepare_receptor4.py
 
 VINADOCK_EXHAUSTIVENESS=8
 VINADOCK_NUM_MODES=10

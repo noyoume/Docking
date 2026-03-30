@@ -8,7 +8,8 @@ From: continuumio/miniconda3:24.1.2-0
 %environment
     export LC_ALL=C
     export LANG=C
-    export PATH=/opt/conda/envs/vina_dock/bin:/opt/conda/envs/adcpsuite/bin:/opt/conda/bin:$PATH
+    export PATH=/opt/conda/envs/vina_dock/bin:/opt/ADFRsuite/bin:/opt/conda/bin:$PATH
+    export LD_LIBRARY_PATH=/opt/ADFRsuite/lib:${LD_LIBRARY_PATH}
 
 %post
     apt-get update
@@ -25,8 +26,12 @@ From: continuumio/miniconda3:24.1.2-0
     /opt/conda/bin/conda install -n vina_dock -y -c conda-forge \
         numpy rdkit spyrmsd vina meeko
 
-    /opt/conda/bin/conda create -n adcpsuite -y python=3.7 numpy pip
-    /opt/conda/bin/conda run -n adcpsuite pip install adfr
+    cd /tmp && \
+        wget -q https://ccsb.scripps.edu/adfr/download/1038/ -O ADFRsuite_x86_64Linux_1.0.tar.gz && \
+        tar xzf ADFRsuite_x86_64Linux_1.0.tar.gz && \
+        cd ADFRsuite_x86_64Linux_1.0 && \
+        ./install.sh -d /opt/ADFRsuite -c 0 && \
+        rm -rf /tmp/ADFRsuite*
 
     /opt/conda/bin/conda clean -afy
 
