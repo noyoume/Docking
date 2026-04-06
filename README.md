@@ -1,4 +1,4 @@
-# Vina Docking Pipeline
+# Vina docking pipeline
 
 A generic AutoDock Vina re-docking framework. Clone this repo and run on any server with conda/mamba.
 
